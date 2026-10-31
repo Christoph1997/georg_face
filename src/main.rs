@@ -3,7 +3,7 @@ mod app_state;
 #[cfg(target_os = "linux")]
 mod ros2;
 
-mod ui;
+mod bevy_ui;
 
 fn main() {
     let state = app_state::AppState::new();
@@ -29,5 +29,5 @@ fn main() {
     }
 
     // Run the UI on the main thread, regardless of operating system.
-    ui::run(state);
+    bevy_ui::run(state);
 }
