@@ -43,6 +43,27 @@ The task manager needs the same `pib_face_interfaces` package to call the action
 files from `pib_face_interfaces/action/` into your existing pib interface package instead and change the
 `use r2r::pib_face_interfaces::...` line in `src/ros2.rs` to that package's name.
 
+## Windows
+
+On Windows the app runs **without ROS 2** (the ROS bindings are only built on Linux), so there is no
+`colcon`, `libclang` or `source install/setup.bash` step. Use it to try the face and screens with the keyboard.
+
+Install once:
+
+1. [Rust](https://rustup.rs) (`rustup-init.exe`). When asked, install the *Visual Studio C++ Build Tools*
+   ("Desktop development with C++"), which Rust needs for linking.
+2. [Git](https://git-scm.com/download/win) to clone the repo.
+
+Build and start in PowerShell:
+
+```
+cargo build --release
+.\target\release\pib_ui_rs.exe
+```
+
+The first build takes several minutes. The app starts in fullscreen (`F11` toggles, `Esc` closes it).
+Control it with the keys described below: `1`-`4` for emotions, `C` for the confirm question, `H` for the text keyboard.
+
 ## Face control
 
 The app draws the pib eyes and listens on `/face/emotion` (`std_msgs/String`).
