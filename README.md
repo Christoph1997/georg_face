@@ -7,8 +7,14 @@ In addition, the build needs `colcon` and `libclang` (for the Rust ROS bindings 
 sudo apt install ros-dev-tools clang libclang-dev build-essential
 ```
 
-If ROS 2 is not loaded automatically in new terminals, run `source /opt/ros/jazzy/setup.bash` first
-(or add that line to `~/.bashrc`). Check it: `echo $ROS_DISTRO` should print `jazzy`.
+Load ROS 2 in a new terminal. In every new terminal, run
+
+```
+source /opt/ros/jazzy/setup.bash
+```
+
+first (or add that line to `~/.bashrc` to load it automatically).
+Check it: `echo $ROS_DISTRO` should print `jazzy`.
 
 ## Build
 
@@ -30,6 +36,7 @@ In every new terminal that starts the app, source the interface package first (a
 
 ```
 cd georg_face
+source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ./target/release/pib_ui_rs
 ```
@@ -52,7 +59,6 @@ Install once:
 
 1. [Rust](https://rustup.rs) (`rustup-init.exe`). When asked, install the *Visual Studio C++ Build Tools*
    ("Desktop development with C++"), which Rust needs for linking.
-2. [Git](https://git-scm.com/download/win) to clone the repo.
 
 Build and start in PowerShell:
 
