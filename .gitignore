@@ -28,8 +28,6 @@ build/
 install/
 log/
 
-# Personal Claude Code settings
-.claude/settings.local.json
+# Personal Claude Code
+.claude/
 
-# Source archive
-*.zip

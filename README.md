@@ -34,6 +34,9 @@ source install/setup.bash
 ./target/release/pib_ui_rs
 ```
 
+The app starts in fullscreen. Press `F11` to switch between fullscreen and a normal window,
+and `Esc` on the face screen to close the app.
+
 To send commands to the face (see below), use a second terminal and also run `source install/setup.bash` there.
 
 The task manager needs the same `pib_face_interfaces` package to call the actions. If you prefer, move the two
