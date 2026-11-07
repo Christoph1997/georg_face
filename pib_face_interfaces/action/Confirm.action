@@ -1,0 +1,14 @@
+# Pib asks the user a yes/no question on its touch screen.
+
+# question shown on screen; empty uses the default question
+string question
+---
+# answers
+uint8 ANSWER_NO = 0
+uint8 ANSWER_YES = 1
+uint8 ANSWER_TIMEOUT = 2
+
+uint8 answer
+---
+# true as soon as the question is visible
+bool screen_visible

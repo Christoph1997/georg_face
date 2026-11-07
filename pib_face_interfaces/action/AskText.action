@@ -1,0 +1,13 @@
+# Pib asks the user to type a text on its touch screen keyboard.
+
+# text shown above the keyboard; empty uses the default text
+string title
+---
+# false if the user cancelled or nobody answered in time
+bool success
+
+# the typed text (empty if not successful)
+string text
+---
+# true as soon as the keyboard is visible
+bool screen_visible

@@ -1,4 +1,10 @@
 mod app_state;
+mod confirm_ui;
+mod emotion;
+mod face;
+mod help_ui;
+mod pointer;
+mod screen;
 
 #[cfg(target_os = "linux")]
 mod ros2;
