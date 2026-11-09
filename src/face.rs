@@ -1,3 +1,6 @@
+use std::sync::Mutex;
+use std::time::Instant;
+
 use bevy::{camera::ScalingMode, prelude::*};
 
 use crate::app_state::AppState;
@@ -59,16 +62,59 @@ struct EyeAnimation {
     next_blink: f32,
     /// Seconds since the current blink started (None = not blinking).
     blink_t: Option<f32>,
+    /// Current (smoothed) eye shift in canvas pixels.
+    gaze: Vec2,
 }
 
 impl Default for EyeAnimation {
     fn default() -> Self {
         Self {
+            gaze: Vec2::ZERO,
             pose: pose_for(Emotion::Idle),
             emotion: Emotion::Idle,
             next_blink: 2.5,
             blink_t: None,
         }
+    }
+}
+
+/// Largest eye shift in canvas pixels when the person is at the image edge.
+const GAZE_MAX: Vec2 = Vec2::new(45.0, 70.0);
+/// Smoothing speed (1/s) of the eyes following the target.
+const GAZE_SPEED: f32 = 10.0;
+/// Without a new coordinate for this long the eyes go back to idle drifting.
+const GAZE_TIMEOUT: f32 = 2.0;
+
+/// Latest person position (normalized -1..1) and when it arrived.
+/// Set from outside the UI (ROS 2 thread in `ros2.rs`, or the mouse on non-Linux).
+static GAZE_TARGET: Mutex<Option<(Vec2, Instant)>> = Mutex::new(None);
+
+/// Report the position of the person to follow.
+/// `x`: -1 = left edge of the camera image, +1 = right edge.
+/// `y`: -1 = bottom edge, +1 = top edge. Values are clamped to that range.
+#[allow(dead_code)] // only used by the ROS 2 thread on Linux and the mouse elsewhere
+pub fn set_gaze(x: f32, y: f32) {
+    let pos = Vec2::new(x, y).clamp(Vec2::splat(-1.0), Vec2::splat(1.0));
+    *GAZE_TARGET.lock().unwrap() = Some((pos, Instant::now()));
+}
+
+/// Current target, or None if there is none or it is outdated.
+fn fresh_gaze() -> Option<Vec2> {
+    match *GAZE_TARGET.lock().unwrap() {
+        Some((pos, at)) if at.elapsed().as_secs_f32() < GAZE_TIMEOUT => Some(pos),
+        _ => None,
+    }
+}
+
+/// Without ROS 2 (e.g. Windows) the mouse cursor stands in for the person.
+#[cfg(not(target_os = "linux"))]
+fn mouse_gaze(windows: Query<&Window, With<bevy::window::PrimaryWindow>>) {
+    if let Ok(window) = windows.single()
+        && let Some(cursor) = window.cursor_position()
+    {
+        let size = Vec2::new(window.width(), window.height());
+        let n = cursor / size * 2.0 - Vec2::ONE;
+        set_gaze(n.x, -n.y);
     }
 }
 
@@ -84,6 +130,9 @@ pub struct FacePlugin;
 
 impl Plugin for FacePlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(not(target_os = "linux"))]
+        app.add_systems(Update, mouse_gaze.run_if(in_state(AppScreen::Face)));
+
         app.insert_resource(ClearColor(Color::BLACK))
             .init_resource::<EyeAnimation>()
             .add_systems(Startup, setup_camera)
@@ -228,8 +277,14 @@ fn animate_eyes(
     let pose = anim.pose;
     let open = (pose.open * (0.1 + 0.9 * blink)).max(0.05);
 
-    // Slight gaze drift.
-    let gaze = Vec2::new((t * 0.7).sin() * 12.0, (t * 0.5).cos() * 6.0);
+    // Follow the person if a fresh position is known, otherwise drift slightly.
+    let wanted = match fresh_gaze() {
+        Some(pos) => pos * GAZE_MAX,
+        None => Vec2::new((t * 0.7).sin() * 12.0, (t * 0.5).cos() * 6.0),
+    };
+    let kg = 1.0 - (-GAZE_SPEED * dt).exp();
+    anim.gaze = anim.gaze.lerp(wanted, kg);
+    let gaze = anim.gaze;
 
     // Gap disappears as the eye closes.
     let gap = pose.gap * ((open - 0.1) / 0.9).clamp(0.0, 1.0);

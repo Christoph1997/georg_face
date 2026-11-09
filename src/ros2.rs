@@ -26,6 +26,13 @@ pub const EMOTION_TOPIC: &str = "/face/emotion";
 pub const CONFIRM_ACTION: &str = "/face/confirm";
 /// Action: show the keyboard and return the typed text.
 pub const ASK_TEXT_ACTION: &str = "/face/ask_text";
+/// Topic with the position of the person to follow (`geometry_msgs/Point`).
+/// `x`: -1 = left edge of the camera image, +1 = right edge.
+/// `y`: -1 = bottom edge, +1 = top edge.
+/// `z` is ignored: x and y are positions in the camera image, so a taller or
+/// closer person already appears higher in the image (y). In a camera frame z
+/// would be the distance, which a flat display cannot show.
+pub const GAZE_TOPIC: &str = "/face/gaze";
 
 // Values of `Confirm.action` result.answer.
 const ANSWER_NO: u8 = 0;
@@ -62,6 +69,10 @@ pub fn run(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
         .lock()
         .unwrap()
         .subscribe::<Str>(EMOTION_TOPIC, QosProfile::default())?;
+    let mut gaze_sub = node
+        .lock()
+        .unwrap()
+        .subscribe::<r2r::geometry_msgs::msg::Point>(GAZE_TOPIC, QosProfile::default())?;
     let mut confirm_requests = node
         .lock()
         .unwrap()
@@ -88,6 +99,13 @@ pub fn run(state: AppState) -> Result<(), Box<dyn std::error::Error>> {
                     emotion_state.push_output(format!("{err}, falling back to Idle"));
                 }
             }
+        }
+    })?;
+
+    // Gaze topic: the eyes follow the person at this position.
+    spawner.spawn_local(async move {
+        while let Some(p) = gaze_sub.next().await {
+            crate::face::set_gaze(p.x as f32, p.y as f32);
         }
     })?;
 

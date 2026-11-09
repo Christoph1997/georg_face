@@ -82,6 +82,30 @@ ros2 topic pub --once /face/emotion std_msgs/msg/String "data: 'happy'"
 
 Without ROS 2 (e.g. on Windows), press keys `1`-`4` in the window to switch between the emotions.
 
+## Eyes follow a person
+
+The eyes follow a person when the app receives their position on `/face/gaze` (`geometry_msgs/Point`).
+The coordinates are normalized to the camera image:
+
+- `x`: `-1` = left edge, `+1` = right edge
+- `y`: `-1` = bottom edge, `+1` = top edge
+- `z` is ignored, and values outside `-1..1` are clamped.
+
+`z` does not matter because `x` and `y` are positions in the camera image. A taller person (or one standing
+closer) already appears higher in the image, so `y` covers the person's height. In a camera frame `z` would be
+the distance, and a flat display cannot show that.
+
+The eyes move smoothly toward the position.
+If no new position arrives for 2 s, they go back to the normal idle drifting.
+The position is relative to the camera image, so if the camera is in the head and the head turns to the person,
+the eyes return to the middle on their own.
+
+```
+ros2 topic pub -r 10 /face/gaze geometry_msgs/msg/Point "{x: 0.8, y: 0.0, z: 0.0}"
+```
+
+Without ROS 2 (e.g. on Windows), the mouse cursor over the window acts as the person.
+
 ## Actions
 
 Only one screen can be open at a time. A goal that arrives while another screen is showing is **rejected**.
